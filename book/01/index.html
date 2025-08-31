@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="sv" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Svenska Berättelser</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #2c3e50, #4a6572);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 500px;
+            height: 90vh;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .story-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .story-page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transition: transform 0.5s ease, opacity 0.5s ease;
+            transform: translateX(100%);
+        }
+        
+        .story-page.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .story-page.prev {
+            transform: translateX(-100%);
+        }
+        
+        .story-image {
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            border-bottom: 3px solid #3498db;
+        }
+        
+        .story-content {
+            padding: 15px;
+            overflow-y: auto;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .story-text {
+            line-height: 1.8;
+            text-align: justify;
+            margin-bottom: 15px;
+            transition: font-size 0.3s ease;
+            font-size: 1.1rem;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        button {
+            background: linear-gradient(to right, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .nav-dots {
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+            background-color: #f8f9fa;
+        }
+        
+        .dot {
+            width: 10px;
+            height: 10px;
+            background-color: #ccc;
+            border-radius: 50%;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+        
+        .dot.active {
+            background-color: #3498db;
+        }
+        
+        .tts-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .voice-select {
+            padding: 8px;
+            border-radius: 20px;
+            border: 1px solid #ddd;
+            margin-left: 10px;
+            width: 150px;
+        }
+        
+        .font-controls {
+            display: flex;
+            justify-content: center;
+            padding: 5px 0;
+            background-color: #f8f9fa;
+        }
+        
+        .font-btn {
+            background: #5a6268;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .page-indicator {
+            text-align: center;
+            padding: 5px;
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 500px) {
+            .container {
+                height: 95vh;
+                border-radius: 10px;
+            }
+            
+            .story-text {
+                font-size: 1rem;
+            }
+            
+            button {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+        
+        /* Custom scrollbar for story content */
+        .story-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .story-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .story-content::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 10px;
+        }
+        
+        .story-content::-webkit-scrollbar-thumb:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-indicator">
+            Sida <span id="currentPage">1</span> av <span id="totalPages">9</span>
+        </div>
+        
+        <div class="story-container" id="storyContainer">
+            <!-- Story pages will be dynamically inserted here -->
+        </div>
+        
+        <div class="font-controls">
+            <button class="font-btn" id="decreaseFont">A-</button>
+            <button class="font-btn" id="increaseFont">A+</button>
+        </div>
+        
+        <div class="nav-dots" id="navDots">
+            <!-- Navigation dots will be dynamically inserted here -->
+        </div>
+        
+        <div class="controls">
+            <button id="prevBtn"><i class="fas fa-arrow-left"></i> Föregående</button>
+            <button id="nextBtn">Nästa <i class="fas fa-arrow-right"></i></button>
+        </div>
+        
+        <div class="tts-controls">
+            <button id="readAloud"><i class="fas fa-volume-up"></i> Läs upp</button>
+            <select id="voiceSelect" class="voice-select">
+                <!-- Voice options will be dynamically populated -->
+            </select>
+        </div>
+    </div>
+
+    <script>
+        // Story data with Swedish texts
+        const stories = [
+            {
+                image: "images/1.jpg",
+                text: "I en stor skog bodde ett lejon, kungen av djuren. Lejonet hade två schakaler som vänner, de hette Kalila och Dimna. De hjälpte lejonet och pratade alltid med honom."
+            },
+            {
+                image: "images/2.jpg",
+                text: "En dag kom en tjur (oxe) till skogen. Tjuren hade rymt från sin ägare och letade efter mat och vatten. Han började leva nära floden i skogen."
+            },
+            {
+                image: "images/3.jpg",
+                text: "Lejonet hörde tjurens starka röst och blev först rädd. Men Kalila förklarade att tjuren inte var farlig. Snart blev lejonet och tjuren vänner."
+            },
+            {
+                image: "images/4.jpg",
+                text: "Lejonet och tjuren blev mycket nära vänner. De pratade varje dag och delade mat. Dimna blev avundsjuk, han ville ha makt och hatade tjurens vänskap med lejonet."
+            },
+            {
+                image: "images/5.jpg",
+                text: 'Dimna bestämde sig för att skapa problem. Han gick till tjuren och sa: "Lejonet planerar att döda dig." Tjuren blev rädd och började misstänka sin vän.'
+            },
+            {
+                image: "images/6.jpg",
+                text: 'Sedan gick Dimna till lejonet och sa: "Tjuren vill bli kung och han planerar att döda dig." Lejonet blev arg och började tvivla på sin vän.'
+            },
+            {
+                image: "images/7.jpg",
+                text: "Nu litade inte lejonet och tjuren på varandra längre. De träffades men pratade kallt och misstänksamt. Dimna var nöjd med sin plan."
+            },
+            {
+                image: "images/8.jpg",
+                text: "En dag började lejonet och tjuren bråka. De kämpade hårt i skogen, med damm och ljud överallt."
+            },
+            {
+                image: "images/9.jpg",
+                text: "Till slut dödade lejonet tjuren. Efteråt kände lejonet sorg och saknad. Dimna låtsades vara oskyldig men han var glad inuti."
+            }
+        ];
+
+        // Initialize variables
+        let currentPage = 0;
+        let startX = 0;
+        let endX = 0;
+        let fontSize = 1.1; // in rem
+        const storyContainer = document.getElementById('storyContainer');
+        const navDots = document.getElementById('navDots');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const readAloudBtn = document.getElementById('readAloud');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const increaseFontBtn = document.getElementById('increaseFont');
+        const decreaseFontBtn = document.getElementById('decreaseFont');
+        const currentPageElement = document.getElementById('currentPage');
+        const totalPagesElement = document.getElementById('totalPages');
+        let speech = null;
+
+        // Initialize the app
+        function init() {
+            renderStories();
+            updateNavDots();
+            populateVoices();
+            updatePageIndicator();
+            
+            // Add event listeners
+            prevBtn.addEventListener('click', goToPrevPage);
+            nextBtn.addEventListener('click', goToNextPage);
+            readAloudBtn.addEventListener('click', readAloud);
+            increaseFontBtn.addEventListener('click', increaseFontSize);
+            decreaseFontBtn.addEventListener('click', decreaseFontSize);
+            storyContainer.addEventListener('touchstart', handleTouchStart, false);
+            storyContainer.addEventListener('touchend', handleTouchEnd, false);
+            
+            // Voice selection change
+            voiceSelect.addEventListener('change', () => {
+                if (speech) {
+                    speech.cancel();
+                    readAloud();
+                }
+            });
+        }
+
+        // Render all stories
+        function renderStories() {
+            storyContainer.innerHTML = '';
+            
+            stories.forEach((story, index) => {
+                const storyPage = document.createElement('div');
+                storyPage.className = `story-page ${index === 0 ? 'active' : ''}`;
+                storyPage.innerHTML = `
+                    <div class="story-image" style="background-image: url('${story.image}')"></div>
+                    <div class="story-content">
+                        <p class="story-text">${story.text}</p>
+                    </div>
+                `;
+                storyContainer.appendChild(storyPage);
+            });
+            
+            // Update font size for all text elements
+            document.querySelectorAll('.story-text').forEach(text => {
+                text.style.fontSize = `${fontSize}rem`;
+            });
+        }
+
+        // Update navigation dots
+        function updateNavDots() {
+            navDots.innerHTML = '';
+            
+            for (let i = 0; i < stories.length; i++) {
+                const dot = document.createElement('div');
+                dot.className = `dot ${i === currentPage ? 'active' : ''}`;
+                dot.addEventListener('click', () => goToPage(i));
+                navDots.appendChild(dot);
+            }
+        }
+        
+        // Update page indicator
+        function updatePageIndicator() {
+            currentPageElement.textContent = currentPage + 1;
+            totalPagesElement.textContent = stories.length;
+        }
+
+        // Go to specific page
+        function goToPage(pageIndex) {
+            if (pageIndex < 0 || pageIndex >= stories.length) return;
+            
+            const pages = document.querySelectorAll('.story-page');
+            pages[currentPage].className = 'story-page';
+            currentPage = pageIndex;
+            pages[currentPage].className = 'story-page active';
+            
+            updateNavDots();
+            updatePageIndicator();
+            
+            // Stop speech if playing
+            if (speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+                readAloudBtn.innerHTML = '<i class="fas fa-volume-up"></i> Läs upp';
+            }
+        }
+
+        // Go to next page
+        function goToNextPage() {
+            if (currentPage < stories.length - 1) {
+                goToPage(currentPage + 1);
+            }
+        }
+
+        // Go to previous page
+        function goToPrevPage() {
+            if (currentPage > 0) {
+                goToPage(currentPage - 1);
+            }
+        }
+        
+        // Increase font size
+        function increaseFontSize() {
+            if (fontSize < 1.6) {
+                fontSize += 0.1;
+                document.querySelectorAll('.story-text').forEach(text => {
+                    text.style.fontSize = `${fontSize}rem`;
+                });
+            }
+        }
+        
+        // Decrease font size
+        function decreaseFontSize() {
+            if (fontSize > 0.8) {
+                fontSize -= 0.1;
+                document.querySelectorAll('.story-text').forEach(text => {
+                    text.style.fontSize = `${fontSize}rem`;
+                });
+            }
+        }
+
+        // Handle touch start event
+        function handleTouchStart(evt) {
+            startX = evt.touches[0].clientX;
+        }
+
+        // Handle touch end event
+        function handleTouchEnd(evt) {
+            endX = evt.changedTouches[0].clientX;
+            handleSwipe();
+        }
+
+        // Handle swipe gesture
+        function handleSwipe() {
+            const diffX = startX - endX;
+            
+            // Minimum swipe distance
+            if (Math.abs(diffX) > 50) {
+                if (diffX > 0) {
+                    // Swipe left - next page
+                    goToNextPage();
+                } else {
+                    // Swipe right - previous page
+                    goToPrevPage();
+                }
+            }
+        }
+
+        // Populate voice options
+        function populateVoices() {
+            // This will be populated when voices are loaded
+            speechSynthesis.addEventListener('voiceschanged', () => {
+                voiceSelect.innerHTML = '';
+                const voices = speechSynthesis.getVoices();
+                
+                // Filter Swedish voices
+                const swedishVoices = voices.filter(voice => voice.lang.startsWith('sv'));
+                
+                // If no Swedish voices, use available voices
+                const availableVoices = swedishVoices.length > 0 ? swedishVoices : voices;
+                
+                availableVoices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.value = voice.name;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    voiceSelect.appendChild(option);
+                });
+            });
+        }
+
+        // Read aloud function
+        function readAloud() {
+            if (speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+                readAloudBtn.innerHTML = '<i class="fas fa-volume-up"></i> Läs upp';
+                return;
+            }
+            
+            const text = stories[currentPage].text;
+            const voices = speechSynthesis.getVoices();
+            const selectedVoice = voiceSelect.value;
+            
+            speech = new SpeechSynthesisUtterance(text);
+            speech.rate = 0.9;
+            speech.pitch = 1;
+            
+            // Set the selected voice
+            if (selectedVoice) {
+                speech.voice = voices.find(voice => voice.name === selectedVoice);
+            }
+            
+            speech.onend = () => {
+                readAloudBtn.innerHTML = '<i class="fas fa-volume-up"></i> Läs upp';
+            };
+            
+            speechSynthesis.speak(speech);
+            readAloudBtn.innerHTML = '<i class="fas fa-stop"></i> Stoppa';
+        }
+
+        // Initialize the app when the page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
